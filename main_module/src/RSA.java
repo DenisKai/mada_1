@@ -10,21 +10,59 @@ import java.util.Random;
 public class RSA {
     private final int RSA_BIT_LENGTH = 2048;
 
-    public void encrypt() throws IOException {
+    private final String PUBLIC_KEY_FILE = "./main_module/src/keys/pk_bsp.txt";
+    private final String PRIVATE_KEY_FILE = "./main_module/src/keys/sk_bsp.txt";
+    private final String TEST_TEXT_FILE = "./main_module/src/texts/text.txt";
+    private final String ENCRYPTED_TEXT_FILE = "./main_module/src/texts/chiffre_bsp.txt";
+    private final String DECRYPTED_TEXT_FILE = "./main_module/src/texts/text_bsp-d.txt";
+
+    private final String PRIVATE_KEY_FROM_TASK_FILE = "./main_module/src/keys/sk.txt";
+    private final String CHIFFRE_FROM_TASK_FILE = "./main_module/src/texts/chiffre.txt";
+    private final String CHIFFRE_FROM_TASK_DECRYPTED_TEXT_FILE = "./main_module/src/texts/text-d.txt";
+
+    public void generateKeyPairs() throws IOException {
+        // Initialise p and q randomly
+        // todo! are these "verified" primes?
+        BigInteger p = BigInteger.probablePrime(RSA_BIT_LENGTH, new SecureRandom());
+        BigInteger q = BigInteger.probablePrime(RSA_BIT_LENGTH, new SecureRandom());
+        while (p == q) {
+            // as p and q need to be different
+            q = q.nextProbablePrime();
+        }
+
+        // first part of both keys is n
+        BigInteger n = p.multiply(q);
+
+        BigInteger phi_n = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
+
+        // todo! need to have logic to validate if correct pair?? (no negatives etc)
+        BigInteger[] e_d = generateEAndD(phi_n);
+        BigInteger e = e_d[0];
+        BigInteger d = e_d[1];
+
+        BufferedWriter writer_pk = new BufferedWriter(new FileWriter(PUBLIC_KEY_FILE));
+        writer_pk.write("(" + n + "," + e + ")");
+        writer_pk.close();
+        BufferedWriter writer_sk = new BufferedWriter(new FileWriter(PRIVATE_KEY_FILE));
+        writer_sk.write("(" + n + "," + d + ")");
+        writer_sk.close();
+    }
+
+    public String encrypt() throws IOException {
         // a
-        Path path_pk = Path.of("./main_module/src/keys/pk.txt");
-        String puk = Files.readString(path_pk);
+        String puk = Files.readString(Path.of(PUBLIC_KEY_FILE));
         BigInteger n = new BigInteger((puk.split(",")[0]).replace("(", ""));
         BigInteger e = new BigInteger((puk.split(",")[1]).replace(")", ""));
 
         // b
-        Path path_text = Path.of("./main_module/src/texts/text.txt");
+        Path path_text = Path.of(TEST_TEXT_FILE);
         String text = Files.readString(path_text);
         BigInteger[] encrypted_chars = new BigInteger[text.length()];
         for (int i = 0; i < text.length(); i++) {
             char x = text.charAt(i);
             // b + c in fastExponation() implemented
-            encrypted_chars[i] = fastExponation(x, n);
+            encrypted_chars[i] = fastExponationWithBinaryDepiction(BigInteger.valueOf(x), e, n); // fastExponation(x,
+                                                                                                 // n);
         }
 
         // d
@@ -34,47 +72,54 @@ public class RSA {
             sb.append(",").append(encrypted_chars[i]);
         }
 
-        BufferedWriter writer_encrypted = new BufferedWriter(new FileWriter("main_module/src/texts/chiffre.txt"));
-        writer_encrypted.write(sb.toString());
+        var encryptedText = sb.toString();
+
+        BufferedWriter writer_encrypted = new BufferedWriter(new FileWriter(ENCRYPTED_TEXT_FILE));
+        writer_encrypted.write(encryptedText);
         writer_encrypted.close();
+
+        return encryptedText;
     }
 
     // Aufgabe 3
-    public void decrypt() throws IOException {
-        Path path_sk = Path.of("./main_module/src/keys/sk.txt");
+    public String decrypt(boolean decryptMadaTask) throws IOException {
+        Path path_sk = Path.of(PRIVATE_KEY_FILE);
+        if (decryptMadaTask) {
+            path_sk = Path.of(PRIVATE_KEY_FROM_TASK_FILE);
+        }
+
         String puk = Files.readString(path_sk);
         BigInteger n = new BigInteger((puk.split(",")[0]).replace("(", ""));
         BigInteger d = new BigInteger((puk.split(",")[1]).replace(")", ""));
 
-        Path path_e_text = Path.of("./main_module/src/texts/chiffre.txt");
-        String[] text_array = Files.readString(path_e_text).split(",");
-        for (int i = 0; i < text_array.length; i++) {
-            BigInteger y = new BigInteger(text_array[i]);
-            // TODO exponantion hie?
-
+        Path path_e_text = Path.of(ENCRYPTED_TEXT_FILE);
+        if (decryptMadaTask) {
+            path_e_text = Path.of(CHIFFRE_FROM_TASK_FILE);
         }
-    }
 
-    public void generateKeyPairs() throws IOException {
-        // Initialise p and q randomly
-        BigInteger p = BigInteger.probablePrime(RSA_BIT_LENGTH, new SecureRandom());
-        BigInteger q = BigInteger.probablePrime(RSA_BIT_LENGTH, new SecureRandom());
+        String[] text_array = Files.readString(path_e_text).split(",");
 
-        // first part of both keys is n
-        BigInteger n = p.multiply(q);
+        Integer[] decrypted_chars = new Integer[text_array.length];
+        for (int i = 0; i < text_array.length; i++) {
+            BigInteger y = new BigInteger(text_array[i]); // consists of y = (x ^ e) mod n
+            var decryptedBigInt = fastExponationWithBinaryDepiction(y, d, n); // x = (y ^ d) % n;
 
-        BigInteger phi_n = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
+            decrypted_chars[i] = decryptedBigInt.intValue(); // if we trust below 128
+            System.out.println(Character.toString(decrypted_chars[i]));
+        }
 
-        BigInteger[] e_d = generateEAndD(phi_n);
-        BigInteger e = e_d[0];
-        BigInteger d = e_d[1];
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < decrypted_chars.length; i++) {
+            sb.append(Character.toString(decrypted_chars[i]));
+        }
 
-        BufferedWriter writer_pk = new BufferedWriter(new FileWriter("main_module/src/keys/pk.txt"));
-        writer_pk.write("(" + n + "," + e + ")");
-        writer_pk.close();
-        BufferedWriter writer_sk = new BufferedWriter(new FileWriter("main_module/src/keys/sk.txt"));
-        writer_sk.write("(" + n + "," + d + ")");
-        writer_sk.close();
+        var decryptedText = sb.toString();
+        var fileName = decryptMadaTask ? CHIFFRE_FROM_TASK_DECRYPTED_TEXT_FILE : DECRYPTED_TEXT_FILE;
+        BufferedWriter writer_decrypted = new BufferedWriter(new FileWriter(fileName));
+        writer_decrypted.write(decryptedText);
+        writer_decrypted.close();
+
+        return decryptedText;
     }
 
     // Implementation of extended euclidean algorithm
@@ -113,11 +158,15 @@ public class RSA {
                 y1 = y0_temp.subtract(q.multiply(y1));
             }
 
-
             ggT_check = a;
             d = y0;
+
+            // if y0 if negative, need to make sure it's not by adding phi_n
+            while (d.compareTo(BigInteger.ZERO) < 0) {
+                d = d.add(phi_n);
+            }
         }
-        return new BigInteger[]{e, d};
+        return new BigInteger[] { e, d };
     }
 
     // Extended euclidean algorithm (eeA) needs a random e in range 0 to phi_n
@@ -141,14 +190,16 @@ public class RSA {
         // Iterate over byte
         for (int j = 7; j >= 0; j--) {
             if (((x >> j) & 0b0000_0001) == 1) {
-                // bitwise XOR does the trick
+                // bitwise XOR does the trick // todo! the trick for what?? 😅
                 i += (2 ^ j);
             }
         }
         i++; // l is offset by -1
 
+        // todo! what is happening above??
         BigInteger h = BigInteger.ONE;
-        BigInteger k = BigInteger.valueOf((byte) x); // b; ASCII is 0-127 = 128 => a byte with a most significant bit (Danke algd1 & Filip Schramka)
+        BigInteger k = BigInteger.valueOf((byte) x); // b; ASCII is 0-127 = 128 => a byte with a most significant bit
+                                                     // (Danke algd1 & Filip Schramka)
 
         while (i >= 0) {
             if (((x >> i) & 1) == 1) {
@@ -162,10 +213,29 @@ public class RSA {
         return h;
     }
 
-    private char fastExponation(BigInteger y, BigInteger d, BigInteger n) {
-        int i = 0;
-        int h = 1;
+    private BigInteger fastExponationWithBinaryDepiction(BigInteger basis, BigInteger exponent, BigInteger n) {
+        var exponentAsBinary = exponent.toString(2); // big int allows binary depiction with this method
 
-        return 'a';
+        // "Wir gehen von hinten nach vorne über die Binärdarstellung, quadrieren
+        // jedesmal und multiplizieren, falls das Bit 1 ist."
+        int i = exponentAsBinary.length() - 1; // position of least significant bit
+
+        // initializing variables
+        BigInteger h = BigInteger.ONE;
+        BigInteger k = basis;
+
+        while (i >= 0) {
+            if (exponentAsBinary.charAt(i) == '1') {
+                // if bit is set, extend h (result)
+                h = h.multiply(k).mod(n);
+            }
+
+            k = k.multiply(k).mod(n);
+            i--;
+        }
+
+        System.out.println(String.format("%d ^ %d mod %d = %d", basis, exponent, n, h));
+
+        return h;
     }
 }

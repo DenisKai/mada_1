@@ -8,5 +8,11 @@ public class main {
 
         // Aufgabe 2
         rsa.encrypt();
+
+        // Aufgabe 3
+        rsa.decrypt(false);
+
+        // Aufgabe 4
+        rsa.decrypt(true);
     }
 }
