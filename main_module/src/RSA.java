@@ -22,20 +22,19 @@ public class RSA {
 
     public void generateKeyPairs() throws IOException {
         // Initialise p and q randomly
-        // todo! are these "verified" primes?
         BigInteger p = BigInteger.probablePrime(RSA_BIT_LENGTH, new SecureRandom());
         BigInteger q = BigInteger.probablePrime(RSA_BIT_LENGTH, new SecureRandom());
         while (p == q) {
-            // as p and q need to be different
+            // making sure p and q are unequal
             q = q.nextProbablePrime();
         }
 
-        // first part of both keys is n
+        // first part of both keys is n (p * q)
         BigInteger n = p.multiply(q);
 
+        // phi(n) = (p - 1) * (q - 1)
         BigInteger phi_n = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
 
-        // todo! need to have logic to validate if correct pair?? (no negatives etc)
         BigInteger[] e_d = generateEAndD(phi_n);
         BigInteger e = e_d[0];
         BigInteger d = e_d[1];
@@ -60,9 +59,12 @@ public class RSA {
         BigInteger[] encrypted_chars = new BigInteger[text.length()];
         for (int i = 0; i < text.length(); i++) {
             char x = text.charAt(i);
-            // b + c in fastExponation() implemented
-            encrypted_chars[i] = fastExponationWithBinaryDepiction(BigInteger.valueOf(x), e, n); // fastExponation(x,
-                                                                                                 // n);
+            // b; ASCII is 0-127 = 128 => a byte with a most significant bit (Danke algd1 &
+            // Filip Schramka)
+            var xAsBigInteger = BigInteger.valueOf((byte) x);
+
+            // b + c
+            encrypted_chars[i] = fastExponationWithBinaryDepiction(xAsBigInteger, e, n);
         }
 
         // d
@@ -144,8 +146,8 @@ public class RSA {
             // Keep algo running until b' == 0
             while (!b.equals(BigInteger.ZERO)) {
                 BigInteger[] q_r = a.divideAndRemainder(b);
-                q = q_r[0];
-                r = q_r[1];
+                q = q_r[0]; // quotient
+                r = q_r[1]; // remainder
                 a = b;
                 b = r;
 
@@ -161,7 +163,7 @@ public class RSA {
             ggT_check = a;
             d = y0;
 
-            // if y0 if negative, need to make sure it's not by adding phi_n
+            // if y0 is negative, need to make sure it's not by adding phi_n
             while (d.compareTo(BigInteger.ZERO) < 0) {
                 d = d.add(phi_n);
             }
@@ -184,35 +186,6 @@ public class RSA {
     }
 
     // c
-    private BigInteger fastExponation(char x, BigInteger n) {
-        int i = 0; // length e
-
-        // Iterate over byte
-        for (int j = 7; j >= 0; j--) {
-            if (((x >> j) & 0b0000_0001) == 1) {
-                // bitwise XOR does the trick // todo! the trick for what?? 😅
-                i += (2 ^ j);
-            }
-        }
-        i++; // l is offset by -1
-
-        // todo! what is happening above??
-        BigInteger h = BigInteger.ONE;
-        BigInteger k = BigInteger.valueOf((byte) x); // b; ASCII is 0-127 = 128 => a byte with a most significant bit
-                                                     // (Danke algd1 & Filip Schramka)
-
-        while (i >= 0) {
-            if (((x >> i) & 1) == 1) {
-                h = h.multiply(k).mod(n);
-            }
-
-            k = k.multiply(k).mod(n);
-            i--;
-        }
-
-        return h;
-    }
-
     private BigInteger fastExponationWithBinaryDepiction(BigInteger basis, BigInteger exponent, BigInteger n) {
         var exponentAsBinary = exponent.toString(2); // big int allows binary depiction with this method
 
