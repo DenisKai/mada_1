@@ -1,6 +1,8 @@
+package rsa;
+
 import java.io.IOException;
 
-public class main {
+public class RsaAppStarter {
     public static void main(String[] args) throws IOException {
         RSA rsa = new RSA();
         // Aufgabe 1

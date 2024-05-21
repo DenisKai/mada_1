@@ -1,3 +1,5 @@
+package rsa;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -10,15 +12,15 @@ import java.util.Random;
 public class RSA {
     private final int RSA_BIT_LENGTH = 2048;
 
-    private final String PUBLIC_KEY_FILE = "./main_module/src/keys/pk_bsp.txt";
-    private final String PRIVATE_KEY_FILE = "./main_module/src/keys/sk_bsp.txt";
-    private final String TEST_TEXT_FILE = "./main_module/src/texts/text.txt";
-    private final String ENCRYPTED_TEXT_FILE = "./main_module/src/texts/chiffre_bsp.txt";
-    private final String DECRYPTED_TEXT_FILE = "./main_module/src/texts/text_bsp-d.txt";
+    private final String PUBLIC_KEY_FILE = "./main_module/src/rsa/keys/pk_bsp.txt";
+    private final String PRIVATE_KEY_FILE = "./main_module/src/rsa/keys/sk_bsp.txt";
+    private final String TEST_TEXT_FILE = "./main_module/src/rsa/texts/text.txt";
+    private final String ENCRYPTED_TEXT_FILE = "./main_module/src/rsa/texts/chiffre_bsp.txt";
+    private final String DECRYPTED_TEXT_FILE = "./main_module/src/rsa/texts/text_bsp-d.txt";
 
-    private final String PRIVATE_KEY_FROM_TASK_FILE = "./main_module/src/keys/sk.txt";
-    private final String CHIFFRE_FROM_TASK_FILE = "./main_module/src/texts/chiffre.txt";
-    private final String CHIFFRE_FROM_TASK_DECRYPTED_TEXT_FILE = "./main_module/src/texts/text-d.txt";
+    private final String PRIVATE_KEY_FROM_TASK_FILE = "./main_module/src/rsa/keys/sk.txt";
+    private final String CHIFFRE_FROM_TASK_FILE = "./main_module/src/rsa/texts/chiffre.txt";
+    private final String CHIFFRE_FROM_TASK_DECRYPTED_TEXT_FILE = "./main_module/src/rsa/texts/text-d.txt";
 
     public void generateKeyPairs() throws IOException {
         // Initialise p and q randomly
