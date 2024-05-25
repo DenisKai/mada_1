@@ -86,7 +86,7 @@ public class ElGamal {
         }
     }
 
-    // 3 Encode
+    // 3: Encrypt
     // provide file in texts folder
     public void encryptText(String file) {
         // a read public key
@@ -138,7 +138,7 @@ public class ElGamal {
         }
     }
 
-    // 4 decrypt chiffre text
+    // 4: Decrypt chiffre text
     public void decrypt(boolean example) {
         // get private key
         BigInteger b = BigInteger.ZERO;
