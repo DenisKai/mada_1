@@ -1,0 +1,5 @@
+0 - input: 7	 ascii: 49	 - huffman: 32	 = saved: 17
+1 - input: 19	 ascii: 133	 - huffman: 64	 = saved: 69
+2 - input: 19	 ascii: 133	 - huffman: 104	 = saved: 29
+3 - input: 353	 ascii: 2388	 - huffman: 1896	 = saved: 492
+4 - input: 1625	 ascii: 11100	 - huffman: 8560	 = saved: 2540

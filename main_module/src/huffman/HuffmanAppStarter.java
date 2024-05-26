@@ -5,7 +5,7 @@ import java.io.IOException;
 public class HuffmanAppStarter {
     public static void main(String[] args) throws IOException {
         // tests for encoding and decoding
-        Huffman.encode("text.txt", "test");
+        Huffman.encode("/text.txt", "test");
         Huffman.decode(
                 Huffman.TEST_OUTPUT_FILE_NAME,
                 Huffman.TEST_ENCODING_TABLE_FILE_NAME,
@@ -17,7 +17,15 @@ public class HuffmanAppStarter {
                 "/dec_tab-mada.txt",
                 "task");
 
-        // TODO! 10. Testen Sie Ihr Programm an ein paar Textdateien und geben Sie an,
-        // wie viel Platz gespart wird.
+        // 10. test the Programm with a few texts and report how much space is saved.
+        evaluateSpaceSavingWithHuffman();
+    }
+
+    public static void evaluateSpaceSavingWithHuffman() throws IOException {
+        var folderName = "size-test";
+        for (int i = 0; i < 5; i++) {
+            var huffman = Huffman.encode("/" + i + ".txt", folderName);
+            huffman.addEncodingSizeDifferenceToFile(i, "size-difference.txt");
+        }
     }
 }

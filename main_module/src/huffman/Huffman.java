@@ -25,45 +25,64 @@ public class Huffman {
     private HashMap<Integer, TreeEntry> characterMap = new HashMap<>();
     private HashMap<String, TreeEntry> codeMap = new HashMap<>();
 
+    private int encodedCharCountAsAscii = 0;
+    private int encodedCharCountAsHuffman = 0;
+
     public Huffman() {
         super();
     }
 
-    public static Huffman encode(String inputFileName, String outputFolderName) throws IOException {
+    public static Huffman encode(String inputFileName, String folderName) throws IOException {
         var huffman = new Huffman();
-        huffman.readInputFile(inputFileName);
-        huffman.createEncodingStrategy(outputFolderName);
-        huffman.encodeInputText(outputFolderName);
+        huffman.readInputFile(folderName, inputFileName);
+        huffman.createEncodingStrategy(folderName);
+        huffman.encodeInputText(folderName);
 
         return huffman;
     }
 
-    public static Huffman decode(String encodedDatFileName, String encodingTableFileName, String outputFolderName)
+    public static Huffman decode(String encodedDatFileName, String encodingTableFileName, String folderName)
             throws IOException {
         var huffman = new Huffman();
-        huffman.recreateDecodingStrategy(outputFolderName, encodingTableFileName);
-        var byteArray = huffman.readByteArrayFromOutputFile(encodedDatFileName, outputFolderName);
-        huffman.decodeInputText(byteArray, outputFolderName);
+        huffman.recreateDecodingStrategy(folderName, encodingTableFileName);
+        var byteArray = huffman.readByteArrayFromOutputFile(encodedDatFileName, folderName);
+        huffman.decodeInputText(byteArray, folderName);
 
         return huffman;
     }
 
-    private void readInputFile(String inputFileName) throws IOException {
+    public void addEncodingSizeDifferenceToFile(int testNumber, String sizeDifferenceFileName) throws IOException {
+        var sizeDifference = testNumber + " - input: " + inputText.length()
+                + "\t ascii: " + this.encodedCharCountAsAscii
+                + "\t - huffman: " + this.encodedCharCountAsHuffman
+                + "\t = saved: " + (this.encodedCharCountAsAscii - this.encodedCharCountAsHuffman);
+
+        System.out.println(sizeDifference);
+        var sizeDifferenceFilePath = getFilePath("", sizeDifferenceFileName);
+        var shouldAppendToFile = testNumber == 0 ? false : true; // on first test, don't append but overwrite
+        BufferedWriter writer_pk = new BufferedWriter(new FileWriter(sizeDifferenceFilePath, shouldAppendToFile));
+
+        writer_pk.append(sizeDifference);
+        writer_pk.newLine();
+        writer_pk.close();
+    }
+
+    private void readInputFile(String folderName, String inputFileName) throws IOException {
         // 1. read ascii input file
-        Path path_text = Path.of(FOLDER_PATH + inputFileName);
+        Path path_text = Path.of(getFilePath(folderName, inputFileName));
         inputText = Files.readString(path_text);
 
         registerOccurrenceOfCharactersInFile();
     }
 
-    private void createEncodingStrategy(String outputFolderName) throws IOException {
+    private void createEncodingStrategy(String folderName) throws IOException {
         // 3. create huffman encoding tree
         var root = createHuffmanTree();
         // write codes according to tree
         root.writeCode(root, "0");
 
         // 4. save encoding tree to file
-        var encodingFile = getFilePath(outputFolderName, TEST_ENCODING_TABLE_FILE_NAME);
+        var encodingFile = getFilePath(folderName, TEST_ENCODING_TABLE_FILE_NAME);
         BufferedWriter writer_pk = new BufferedWriter(new FileWriter(encodingFile));
 
         var encodingStringBuilder = new StringBuilder();
@@ -79,25 +98,30 @@ public class Huffman {
         writer_pk.close();
     }
 
-    private void encodeInputText(String outputFolderName) throws IOException {
+    private void encodeInputText(String folderName) throws IOException {
         // 5. convert input file to bit string according to huffman
-        var bitString = "";
+        var bitStringHuffman = "";
+        var bitStringAscii = "";
         for (char c : inputText.toCharArray()) {
-            bitString += characterMap.get((int) c).code;
+            bitStringHuffman += characterMap.get((int) c).code;
+            bitStringAscii += Integer.toBinaryString(c);
         }
 
         // 6. expand bit string according to instructions
-        bitString += "1";
-        while (bitString.length() % 8 != 0) {
-            bitString += "0";
+        bitStringHuffman += "1";
+        while (bitStringHuffman.length() % 8 != 0) {
+            bitStringHuffman += "0";
         }
 
         System.out.println("encoded bit string:");
-        System.out.println(bitString);
+        System.out.println(bitStringHuffman);
+
+        this.encodedCharCountAsHuffman = bitStringHuffman.length();
+        this.encodedCharCountAsAscii = bitStringAscii.length();
 
         // 7. create byte array
-        var workingString = bitString;
-        var length = bitString.length() / 8;
+        var workingString = bitStringHuffman;
+        var length = bitStringHuffman.length() / 8;
         var byteArray = new byte[length];
         for (int i = 0; i < length; i++) {
             var next = workingString.substring(0, 8);
@@ -108,7 +132,7 @@ public class Huffman {
         }
 
         // 8. save byte array in .dat file
-        saveByteArrayToOutputFile(byteArray, outputFolderName);
+        saveByteArrayToOutputFile(byteArray, folderName);
     }
 
     private void registerOccurrenceOfCharactersInFile() {
@@ -147,17 +171,17 @@ public class Huffman {
         return queue.peek();
     }
 
-    private void saveByteArrayToOutputFile(byte[] byteArray, String outputFolderName) throws IOException {
+    private void saveByteArrayToOutputFile(byte[] byteArray, String folderName) throws IOException {
         // code according to hint from 8.
-        var byteArrayFile = getFilePath(outputFolderName, TEST_OUTPUT_FILE_NAME);
+        var byteArrayFile = getFilePath(folderName, TEST_OUTPUT_FILE_NAME);
         FileOutputStream fos = new FileOutputStream(byteArrayFile);
         fos.write(byteArray);
         fos.close();
     }
 
-    private byte[] readByteArrayFromOutputFile(String outputFileName, String outputFolderName) throws IOException {
+    private byte[] readByteArrayFromOutputFile(String outputFileName, String folderName) throws IOException {
         // code according to hint from 8.
-        File file = new File(getFilePath(outputFolderName, outputFileName));
+        File file = new File(getFilePath(folderName, outputFileName));
         byte[] bFile = new byte[(int) file.length()];
         FileInputStream fis = new FileInputStream(file);
         fis.read(bFile);
@@ -166,9 +190,9 @@ public class Huffman {
         return bFile;
     }
 
-    private void recreateDecodingStrategy(String outputFolderName, String encodingTableFileName) throws IOException {
+    private void recreateDecodingStrategy(String folderName, String encodingTableFileName) throws IOException {
         // read huffman encoding table from file
-        Path path_text = Path.of(getFilePath(outputFolderName, encodingTableFileName));
+        Path path_text = Path.of(getFilePath(folderName, encodingTableFileName));
         var encodingText = Files.readString(path_text);
         var characterSets = encodingText.split(ENCODING_CHAR_SET_SEPARATOR);
 
@@ -181,7 +205,7 @@ public class Huffman {
         }
     }
 
-    private void decodeInputText(byte[] byteArray, String outputFolderName) throws IOException {
+    private void decodeInputText(byte[] byteArray, String folderName) throws IOException {
         var bitStringBuilder = new StringBuilder();
         for (byte b : byteArray) {
             var i = Integer.toBinaryString(Byte.toUnsignedInt(b));
@@ -215,15 +239,15 @@ public class Huffman {
         System.out.println(decodedString);
 
         // write decoded / decompressed result
-        var decodedFile = getFilePath(outputFolderName, TEST_DECOMPRESS_FILE_NAME);
+        var decodedFile = getFilePath(folderName, TEST_DECOMPRESS_FILE_NAME);
         BufferedWriter writer_pk = new BufferedWriter(new FileWriter(decodedFile));
 
         writer_pk.write(decodedString);
         writer_pk.close();
     }
 
-    private String getFilePath(String outputFolderName, String fileName) {
-        return FOLDER_PATH + "/" + outputFolderName + fileName;
+    private String getFilePath(String folderName, String fileName) {
+        return FOLDER_PATH + "/" + folderName + fileName;
     }
 
     private class TreeEntry implements Comparable<TreeEntry> {
